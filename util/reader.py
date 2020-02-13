@@ -14,18 +14,23 @@ def get_user_click(rating_file):
         dict key:userId, value:[itemId1, itemId2]
     """
     df = pd.read_csv(rating_file)  # 读取文件
-    df = df.sample(2000, random_state=1) # 采样
+    df = df.sample(2000, random_state=8)  # 采样
     df = df.sort_values(['timestamp'], ascending=False)  # 最近看的电影排前面
     user_click = {}
+    user_click_time = {}
     for index, row in df.iterrows():  # 遍历
         row_id = int(row['userId'])
         movie_id = int(row['movieId'])
+        time_stamp = int(row['timestamp'])
         if row['rating'] >= 3:  # 分数>=3
             if row_id not in user_click.keys():  # 如果userId不存在
                 user_click[row_id] = [movie_id, ]  # 初始化
             else:
                 user_click[row_id].append(movie_id)  # 添加value
-    return user_click
+            if str(row_id) + '_' + str(movie_id) not in user_click_time.keys():
+                user_click_time[str(row_id) + '_' + str(movie_id)] = time_stamp
+
+    return user_click, user_click_time
 
 
 def get_item_info(item_file):

@@ -1,19 +1,25 @@
 from util.reader import get_item_info, get_user_click
+import math
 
 
-def base_contribute():
-    return 1
+def base_contribute(item_len, delta_time):
+    # return 1  # 原始贡献
+    # return 1/math.log10(1+item_len)  # 降低活跃用户的贡献度
+    total_sec = 60*60*24
+    delta_time = delta_time/total_sec
+    return 1/(1+delta_time)
 
 
-def cal_item_sim(user_click):
+def cal_item_sim(user_click, user_click_time):
     """calculate the sim of two item
     计算物品间的相似度
     such as dict[userId1][userId2] is sim_score of the two user
 
     Args:
         user_click: key:userId, value:[item1, item2]
+        user_click_time: key:userId_movieId, value:timestamp
     Return:
-        dict key:userId, value:{key:userId, value:sim_score}
+        dict key:userId, value:list({key:userId, value:sim_score})
     """
     co_appear = {}  # 记录item1与item2同时被同一个用户点击的用户个数
     item_user_click_item = {}  # 记录每个item被点击的次数
@@ -32,7 +38,8 @@ def cal_item_sim(user_click):
                     co_appear[item_i] = {}
                 if item_j not in co_appear[item_i].keys():
                     co_appear[item_i][item_j] = 0
-                co_appear[item_i][item_j] += base_contribute()
+                delta_time = abs(user_click_time[f'{user_id}_{item_i}']-user_click_time[f'{user_id}_{item_j}'])
+                co_appear[item_i][item_j] += base_contribute(len(items), delta_time)
 
     # 计算item1与item2之间的相似度
     sim_info = {}
@@ -71,20 +78,50 @@ def cal_recommend_result(sim_info, user_click):
     return recommend_result
 
 
+def debug_item_sim(item_info, sim_info):
+    """
+    show item info
+    Args:
+        item_info:dict key:itemId, value:[title, genre]
+        sim_info:dict key:itemId, value{itemId2, score}
+    """
+    itemId = 2
+    if itemId not in item_info.keys():
+        print("not this itemId")
+    [item_title, item_genre] = item_info[itemId]
+    print(item_title)
+    for itemId2, score in sim_info[itemId][:10]:
+        [title2, genre2] = item_info[itemId2]
+        print(title2, score)
+
+
+def debug_recommend_result(recommend_result, item_info):
+    """
+    debug_recommend_result
+    Args:
+         recommend_result: dict key:userId, value:{itemId:score}
+         item_info: dict key:itemId, value:[title, genre]
+    """
+    user_id = 1
+    print('给userId推荐的电影为')
+    for item_id, score in recommend_result[user_id].items():
+        print(item_info[item_id][0], score)
+
+
 def main_flow():
     """
     main flow of item_cf
     """
-    user_click = get_user_click('../data/ratings.csv')  # 获得user[item1,item2]
+    user_click, user_click_time = get_user_click('../data/ratings.csv')  # 获得user[item1,item2]
     # 计算item与item直接的相似度
-    sim_info = cal_item_sim(user_click)
+    sim_info = cal_item_sim(user_click, user_click_time)
     # print(sim_info)
     # 计算推荐结果
     recommend_result = cal_recommend_result(sim_info, user_click)
-    print('推荐给userId=1的电影以及推荐度：')
-    print(recommend_result[1])
-    print('userId=1看过的电影')
-    print(user_click[1])
+
+    item_info = get_item_info('../data/movies.csv')  # 获得{movieId:[title, genre]}
+    # debug_item_sim(item_info, sim_info)
+    debug_recommend_result(recommend_result, item_info)
 
 
 if __name__ == '__main__':
