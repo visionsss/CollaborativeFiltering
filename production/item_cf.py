@@ -12,12 +12,11 @@ def base_contribute(item_len, delta_time):
 
 def cal_item_sim(user_click, user_click_time):
     """calculate the sim of two item
-    计算物品间的相似度
     such as dict[itemId1][itemId2] is sim_score of the two item
 
     Args:
         user_click: key:userId, value:[item1, item2]
-        user_click_time: key:userId_movieId, value:timestamp
+        user_click_time: list [(userId_movieId, timestamp)]
     Return:
         dict key:item_i, value:list({key:item_j, value:sim_score})
     """
@@ -30,12 +29,12 @@ def cal_item_sim(user_click, user_click_time):
                 item_user_click_item[item_i] = 1
             else:
                 item_user_click_item[item_i] += 1
+            if item_i not in co_appear.keys():
+                co_appear[item_i] = {}
             for index_j, item_j in enumerate(items):
                 if index_i == index_j:  # 自己跟自己的相似度是1，不用记录
                     continue
                 # 记录item1和item2同时出现的次数 co_appear
-                if item_i not in co_appear.keys():
-                    co_appear[item_i] = {}
                 if item_j not in co_appear[item_i].keys():
                     co_appear[item_i][item_j] = 0
                 delta_time = abs(user_click_time[f'{user_id}_{item_i}']-user_click_time[f'{user_id}_{item_j}'])
@@ -70,11 +69,12 @@ def cal_recommend_result(sim_info, user_click):
     topK = 5  # 最相似的K个item
     for user_id, click_list in user_click.items():
         recommend_result[user_id] = {}
-        for item in (click_list[:recent_click_num]):   # 此处需计算最近浏览的物品是哪几个，但此处没有
+        for item in (click_list[-recent_click_num:]):
             if item not in sim_info.keys():
                 continue
             for item_sim_id, item_sim_score in (sim_info[item][:topK]):
                 recommend_result[user_id][item_sim_id] = item_sim_score
+
     return recommend_result
 
 
@@ -102,9 +102,12 @@ def debug_recommend_result(recommend_result, item_info):
          recommend_result: dict key:userId, value:{itemId:score}
          item_info: dict key:itemId, value:[title, genre]
     """
+    # recommend_result sorted
+    for key, value in recommend_result.items():
+        recommend_result[key] = sorted(recommend_result[key].items(), key=lambda x: x[1], reverse=True)
     user_id = 1
     print('给userId推荐的电影为')
-    for item_id, score in recommend_result[user_id].items():
+    for item_id, score in recommend_result[user_id]:
         print(item_info[item_id][0], score)
 
 
@@ -120,7 +123,7 @@ def main_flow():
     recommend_result = cal_recommend_result(sim_info, user_click)
 
     item_info = get_item_info('../data/movies.csv')  # 获得{movieId:[title, genre]}
-    # debug_item_sim(item_info, sim_info)
+    debug_item_sim(item_info, sim_info)
     debug_recommend_result(recommend_result, item_info)
 
 

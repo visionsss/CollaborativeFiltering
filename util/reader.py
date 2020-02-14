@@ -10,8 +10,9 @@ def get_user_click(rating_file):
     Arg:
         rating_file: input file[userId,movieId,rating,timestamp]
 
-    Return:
-        dict key:userId, value:[itemId1, itemId2]
+    Returns:
+        user_click: dict key:userId, value:[itemId1, itemId2]
+        user_click_time: key:'userId_movieId' value:timestamp
     """
     df = pd.read_csv(rating_file)  # 读取文件
     df = df.sample(2000, random_state=8)  # 采样
