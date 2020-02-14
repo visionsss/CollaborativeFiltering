@@ -13,13 +13,13 @@ def base_contribute(item_len, delta_time):
 def cal_item_sim(user_click, user_click_time):
     """calculate the sim of two item
     计算物品间的相似度
-    such as dict[userId1][userId2] is sim_score of the two user
+    such as dict[itemId1][itemId2] is sim_score of the two item
 
     Args:
         user_click: key:userId, value:[item1, item2]
         user_click_time: key:userId_movieId, value:timestamp
     Return:
-        dict key:userId, value:list({key:userId, value:sim_score})
+        dict key:item_i, value:list({key:item_j, value:sim_score})
     """
     co_appear = {}  # 记录item1与item2同时被同一个用户点击的用户个数
     item_user_click_item = {}  # 记录每个item被点击的次数
@@ -70,7 +70,7 @@ def cal_recommend_result(sim_info, user_click):
     topK = 5  # 最相似的K个item
     for user_id, click_list in user_click.items():
         recommend_result[user_id] = {}
-        for item in (click_list[:recent_click_num]):
+        for item in (click_list[:recent_click_num]):   # 此处需计算最近浏览的物品是哪几个，但此处没有
             if item not in sim_info.keys():
                 continue
             for item_sim_id, item_sim_score in (sim_info[item][:topK]):
